@@ -4,7 +4,7 @@ BO_deriveSelfDir ___TMP___ "$BO_SELF_BASH_SOURCE"
 local __BO_DIR__="$___TMP___"
 
 
-BO_requireModule "${__BO_DIR__}/../../docker.sh" as "localDocker" "localhost"
+BO_requireModule "../../docker.sh" as "localDocker" "localhost"
 
 localDocker list -a
 
