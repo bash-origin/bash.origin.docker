@@ -32,6 +32,18 @@ exit 1
 	fi
 }
 
+# Use this when you get 'Error response from daemon: client is newer than server' and re-run.
+# TODO: Run 'docker ps' when this modules initializes and if we get 'Error response from daemon: client is newer than server'
+#       run this method (only when running with --autofix)
+function EXPORTS_reprovision_docker_host {
+
+		EXPORTS_ensure_docker_host
+
+		docker-machine stop default
+		docker-machine rm -f default
+		docker-machine create --driver virtualbox default
+}
+
 function EXPORTS_ensure_docker_host {
 
 	ip="${_CONTAINER_HOST_IP}"
@@ -134,11 +146,19 @@ function EXPORTS_remove_old_images {
   	fi
 }
 
+
+function EXPORTS_force_build {
+		EXPORTS_build "$@" --no-cache=true
+}
+
 function EXPORTS_build {
 
 	EXPORTS_activate
 
 	path="${1}"
+	if [ "$path" == "." ]; then
+			path="$(pwd)"
+	fi
 	image="${2}"
 	# TODO: Support optionally passing a config file or looking for a config file
 	#       in the provided path.
@@ -157,9 +177,9 @@ function EXPORTS_build {
 
 	pushd "${path}" > /dev/null
 
-			docker build -t "${image}" .
-# TODO: Use args passed along
-#				docker build -t "${image}" --no-cache .
+			BO_log "$VERBOSE" "Running: docker build ${*:3} -t ${image} ."
+
+			docker build ${*:3} -t "${image}" .
 
 	popd > /dev/null
 
@@ -177,7 +197,9 @@ function EXPORTS_start {
 
 	BO_log "$VERBOSE" "Run image '${image}' on host '${host}'"
 
-  docker run -d -e DOCKER_HOST="${host}" -p "${hostPort}:8080" "${image}" ${*:3}
+	BO_log "$VERBOSE" "Running: docker run -d -e DOCKER_HOST=${host} -p ${hostPort}:8080 ${*:3} ${image}"
+
+  docker run -d -e DOCKER_HOST="${host}" -p "${hostPort}:8080" ${*:3} "${image}"
 }
 
 function EXPORTS_logs {
@@ -201,4 +223,32 @@ function EXPORTS_logs {
 	if [ ! -z "$VERBOSE" ]; then
 		echo "----- end logs -----"
 	fi
+}
+
+
+function EXPORTS_ensure_directory_mounted_into_docker_machine {
+		# @see http://stackoverflow.com/a/33404132/330439
+
+		if ! BO_has openssl; then
+				echo "ERROR: 'openssl' command required!"
+				exit 1
+		fi
+
+		MACHINE_NAME="default"
+		WORK_DIR="$1"
+		# NOTE: We mount our working directory to the same spot in the VM for
+		#       simplicity, consistency and to avoid conflicts.
+		HOST_DIR="$WORK_DIR"
+	  VOL_NAME="vol_$(echo -n "$HOST_DIR" | openssl sha1)"
+
+		BO_log "$VERBOSE" "Creating directory '$HOST_DIR' on docker-machine '$MACHINE_NAME'"
+		BO_log "$VERBOSE" "Running: docker-machine ssh \"$MACHINE_NAME\" \"sudo mkdir -p \"$HOST_DIR\"\""
+		docker-machine ssh "$MACHINE_NAME" "sudo mkdir -p \"$HOST_DIR\""
+
+		BO_log "$VERBOSE" "Sharing work directory '$WORK_DIR' to docker-machine '$MACHINE_NAME' into directory '$HOST_DIR' using volume name '$VOL_NAME'"
+		BO_log "$VERBOSE" "Running: vboxmanage sharedfolder add $MACHINE_NAME --name $VOL_NAME --hostpath $HOST_DIR --transient"
+		vboxmanage sharedfolder add "$MACHINE_NAME" --name "$VOL_NAME" --hostpath "$HOST_DIR" --transient
+
+		BO_log "$VERBOSE" "Running: docker-machine ssh $MACHINE_NAME \"sudo mount -t vboxsf -o uid=100,gid=100 \\"$VOL_NAME\\" \\"$HOST_DIR\\"\""
+		docker-machine ssh $MACHINE_NAME "sudo mount -t vboxsf -o uid=100,gid=100 \"$VOL_NAME\" \"$HOST_DIR\""
 }

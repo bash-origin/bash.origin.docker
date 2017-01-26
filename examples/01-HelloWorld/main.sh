@@ -24,11 +24,11 @@ BO_requireModule "../../docker.sh" as "localDocker" "localhost"
 
 localDocker list -a
 
-localDocker build "${__BO_DIR__}" "bach.origin.docker.example"
+localDocker force_build . "org.bashorigin.docker.test.01"
 
 # TODO: Get free port dynamically
 local port="8055"
-localDocker start "bach.origin.docker.example" "${port}"
+localDocker start "org.bashorigin.docker.test.01" "${port}"
 localDocker list
 
 # TODO: Instead of just sleeping for 1 second, use curl to call server
@@ -45,14 +45,14 @@ if [ "${response}" != "Hello World from dockerized NodeJS process!" ]; then
 		exit 1
 fi
 
-localDocker logs "bach.origin.docker.example"
+localDocker logs "org.bashorigin.docker.test.01"
 
-if [[ `localDocker logs "bach.origin.docker.example"` != *"$requestID"* ]]; then
+if [[ `localDocker logs "org.bashorigin.docker.test.01"` != *"$requestID"* ]]; then
 		echo "ERROR: Did not find request in logs!"
 		exit 1
 fi
 
-localDocker stop "bach.origin.docker.example"
+localDocker stop "org.bashorigin.docker.test.01"
 
 localDocker list
 
