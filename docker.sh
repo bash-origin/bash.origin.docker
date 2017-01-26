@@ -7,6 +7,16 @@ local $CONTAINER_HOST_LOGIN
 CONTAINER_HOST_LOGIN="${__ARG1__}"
 
 
+if ! BO_has docker; then
+		echo >&2 "ERROR: 'docker' command not found!"
+		exit 1
+fi
+if ! BO_has docker-machine; then
+		echo >&2 "ERROR: 'docker' command not found!"
+		exit 1
+fi
+
+
 function EXPORTS_login_to_container_host {
 	login="${CONTAINER_HOST_LOGIN}"
 

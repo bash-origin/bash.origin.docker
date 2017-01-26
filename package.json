@@ -6,6 +6,6 @@
       "bash.origin.test": "^0.1.13"
   },
   "scripts": {
-      "test": "BO_VERBOSE=1 bash.origin.test examples"
+      "test": "bash.origin.test examples"
   }
 }
