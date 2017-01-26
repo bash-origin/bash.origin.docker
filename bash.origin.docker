@@ -1,0 +1,216 @@
+#!/bin/bash
+# Source https://github.com/cadorn/bash.origin
+. "$HOME/.bash.origin"
+function init {
+	eval BO_SELF_BASH_SOURCE="$BO_READ_SELF_BASH_SOURCE"
+	BO_deriveSelfDir ___TMP___ "$BO_SELF_BASH_SOURCE"
+	local __BO_DIR__="$___TMP___"
+
+
+	function new {
+
+		prefix="${1}"
+		login="${2}"
+		# TODO: Support optionally passing a config file path for the second argument.
+
+		BO_log "$VERBOSE" "New 'bash.origin.docker' instance for login '${login}' with prefix '${prefix}'"
+
+		export ${prefix}="github.com/bash-origin/bash.origin.docker"
+
+# TODO: Write a bash abstraction that can take a bash file and inject the ${prefix}
+#       wherever there is a %%__PREFIX__%% placeholder.
+source /dev/stdin <<EOF
+
+	export ${prefix}_CONTAINER_HOST_LOGIN="${login}"
+
+
+	function ${prefix}_login_to_container_host {
+		login="\${${prefix}_CONTAINER_HOST_LOGIN}"
+
+		if [ "${login}" == "localhost" ]; then
+			BO_log "$VERBOSE" "Use host container login: localhost"
+		else
+			BO_log "$VERBOSE" "Use host container login: ${login}"
+
+			# TODO: Establish a tmux session we can keep going back to between
+			#       commands so we do not have to relogin for every command.
+
+echo "TODO"
+exit 1
+		fi
+	}
+
+	function ${prefix}_ensure_docker_host {
+
+		ip="\${${prefix}_CONTAINER_HOST_IP}"
+
+		if [ "\${ip}" != "" ]; then
+			BO_log "\$VERBOSE" "We already have a value for CONTAINER_HOST_IP: \${${prefix}_CONTAINER_HOST_IP}"
+			return
+		fi
+		# @see https://docs.docker.com/machine/get-started/
+		if [ -z "\${DOCKER_HOST}" ]; then
+
+			if [ "\$(docker-machine ls --filter name=default | grep default)" == "" ]; then
+
+				BO_log "\$VERBOSE" "Create new default docker-machine"
+
+				# TODO Support other drivers
+				docker-machine create --driver virtualbox default
+				docker-machine start default
+			else
+				if [ "\$(docker-machine ls --filter name=default --filter state=running | grep default)" == "" ]; then
+
+					BO_log "\$VERBOSE" "Start default docker-machine"
+
+			    	docker-machine start default
+				fi
+			fi
+			BO_log "\$VERBOSE" "Load default docker-machine env"
+	    	function stopAndStart {
+	    	    # The machine may enter a timeout state and not be reachable.
+	    	    docker-machine stop default
+	        	docker-machine start default
+	    	}
+	    	docker-machine env default > /dev/null || stopAndStart
+	    	eval "\$(docker-machine env default)"
+	    fi
+	    export ${prefix}_CONTAINER_HOST="\${DOCKER_HOST}"
+	    export ${prefix}_CONTAINER_HOST_IP=\`node --eval '
+	        const URL = require("url");
+	        process.stdout.write(URL.parse(process.env.DOCKER_HOST).hostname);
+	    '\`
+	}
+
+	function ${prefix}_activate {
+		${prefix}_login_to_container_host
+		${prefix}_ensure_docker_host
+	}
+
+
+	function ${prefix}_list {
+		${prefix}_activate
+		docker ps \$@
+	}
+
+	function ${prefix}_restart {
+		${prefix}_stop "\$@"
+		${prefix}_start "\$@"
+	}
+
+	function ${prefix}_stop {
+		${prefix}_activate
+
+		image="\${1}"
+
+		# TODO: Determine if 'image' is a container ID or image name+tag
+
+		BO_log "\$VERBOSE" "Stop containers for image '\${image}'"
+
+		# TODO: Support stopping multiple containers.
+
+        existingContainers=\`docker ps --filter ancestor="\${image}" --format="{{.ID}}"\`
+        if [ "\${existingContainers}" != "" ]; then
+            echo "Stopping existing docker container: \${existingContainers}"
+    		docker stop "\${existingContainers}"
+    	fi
+
+    	${prefix}_remove_old_containers
+	}
+
+	function ${prefix}_remove_old_containers {
+        # Remove exited containers older than one hour
+        oldContainers=\`docker ps -a | grep -e 'Exited .* \(hour\|hours\|day\|days\) ago' | cut -d ' ' -f 1 | xargs echo\`
+        if [ "\${oldContainers}" != "" ]; then
+            BO_log "\$VERBOSE" "Removing old containers: \${oldContainers}"
+    		docker rm \${oldContainers} || true
+    	fi
+	}
+
+	function ${prefix}_remove_old_images {
+		# First we remove old containers as images may only be
+		# removed if there are no containers based on them.
+    	${prefix}_remove_old_containers
+
+        # Remove old (dangling) image builds
+        # TODO: Keep a few old versioned image builds around
+        # TODO: Only remove old images with our name
+        oldImages=\`docker images -qa -f "dangling=true" | xargs echo\`
+        if [ "\${oldImages}" != "" ]; then
+            BO_log "\$VERBOSE" "Removing old images: \${oldImages}"
+    		docker rmi \${oldImages} || true
+    	fi
+	}
+
+	function ${prefix}_build {
+		${prefix}_activate
+
+		path="\${1}"
+		image="\${2}"
+		# TODO: Support optionally passing a config file or looking for a config file
+		#       in the provided path.
+
+        # NOTE: We must stop containers with our image name or the
+        #       tagged image name will disappear from 'docker ps' because
+        #       a new image with the same tag will be generated on 'docker build'.
+        # TODO: Don't require existing containers to be stopped by tagging
+        #       images with version instead of assuming 'latest'.
+        #       To do that we must export all assets to be dockerized first and
+        #       generate a '.sm.snapshot' file to hold the hash of the files.
+        #       If the hash changes we generate a new build number.
+		${prefix}_stop \${image}
+
+		BO_log "\$VERBOSE" "Build image '\${image}' from path '\${path}'"
+
+		pushd "\${path}" > /dev/null
+
+				docker build -t "\${image}" .
+# TODO: Use args passed along
+#				docker build -t "\${image}" --no-cache .
+
+		popd > /dev/null
+
+		${prefix}_remove_old_images
+	}
+
+	function ${prefix}_start {
+		${prefix}_activate
+
+		image="\${1}"
+		hostPort="\${2}"
+		# TODO: Support optionally passing a config file.
+
+		host="\${${prefix}_CONTAINER_HOST}"
+
+		BO_log "\$VERBOSE" "Run image '\${image}' on host '\${host}'"
+
+        docker run -d -e DOCKER_HOST="\${host}" -p "\${hostPort}:8080" "\${image}" ${*:3}
+	}
+
+	function ${prefix}_logs {
+		${prefix}_activate
+
+		image="\${1}"
+
+		container=\`docker ps -a --filter ancestor="\${image}" --format="{{.ID}}" | head -1\`
+
+		if [ "\${container}" == "" ]; then
+			echo "WARNING: No container found for image '\${image}'";
+			return 1;
+		fi
+
+		BO_log "\$VERBOSE" "Get latest container '\${container}' logs for image '\${image}'"
+
+		if [ ! -z "\$VERBOSE" ]; then
+			echo "----- logs for container '\${container}' based on image '\${image}' -----"
+		fi
+        docker logs --tail=all -t "\${container}"
+		if [ ! -z "\$VERBOSE" ]; then
+			echo "----- end logs -----"
+		fi
+	}
+EOF
+	}
+
+}
+init $@

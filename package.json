@@ -1,0 +1,8 @@
+{
+  "uid": "github.com/bash-origin/bash.origin.docker",
+  "name": "bash.origin.docker",
+  "version": "0.1.0",
+  "scripts": {
+      "test": "./test.sh"
+  }
+}
