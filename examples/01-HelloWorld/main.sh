@@ -4,6 +4,8 @@ BO_deriveSelfDir ___TMP___ "$BO_SELF_BASH_SOURCE"
 local __BO_DIR__="$___TMP___"
 
 
+echo "TEST_MATCH_IGNORE>>>"
+
 BO_requireModule "../../docker.sh" as "localDocker" "localhost"
 
 localDocker list -a
@@ -39,3 +41,8 @@ fi
 localDocker stop "bach.origin.docker.example"
 
 localDocker list
+
+echo "<<<TEST_MATCH_IGNORE"
+
+
+echo "OK"
