@@ -177,9 +177,9 @@ function EXPORTS_build {
 
 	pushd "${path}" > /dev/null
 
-			BO_log "$VERBOSE" "Running: docker build ${*:3} -t ${image} ."
+			BO_log "$VERBOSE" "Running: docker build --build-arg BO_VERBOSE=${BO_VERBOSE} --build-arg VERBOSE=${VERBOSE} ${*:3} -t ${image} ."
 
-			docker build ${*:3} -t "${image}" .
+			docker build --build-arg BO_VERBOSE=${BO_VERBOSE} --build-arg VERBOSE=${VERBOSE} ${*:3} -t "${image}" .
 
 	popd > /dev/null
 
@@ -197,7 +197,7 @@ function EXPORTS_start {
 
 	BO_log "$VERBOSE" "Run image '${image}' on host '${host}'"
 
-	BO_log "$VERBOSE" "Running: docker run -d -e DOCKER_HOST=${host} -p ${hostPort}:8080 ${*:3} ${image}"
+	BO_log "$VERBOSE" "Running: docker run -d -e BO_VERBOSE=${BO_VERBOSE} -e VERBOSE=${VERBOSE} -e DOCKER_HOST=${host} -p ${hostPort}:8080 ${*:3} ${image}"
 
   docker run -d -e DOCKER_HOST="${host}" -p "${hostPort}:8080" ${*:3} "${image}"
 }
@@ -219,7 +219,7 @@ function EXPORTS_logs {
 	if [ ! -z "$VERBOSE" ]; then
 		echo "----- logs for container '${container}' based on image '${image}' -----"
 	fi
-      docker logs --tail=all -t "${container}"
+      docker logs ${*:2} -t "${container}"
 	if [ ! -z "$VERBOSE" ]; then
 		echo "----- end logs -----"
 	fi
@@ -247,7 +247,11 @@ function EXPORTS_ensure_directory_mounted_into_docker_machine {
 
 		BO_log "$VERBOSE" "Sharing work directory '$WORK_DIR' to docker-machine '$MACHINE_NAME' into directory '$HOST_DIR' using volume name '$VOL_NAME'"
 		BO_log "$VERBOSE" "Running: vboxmanage sharedfolder add $MACHINE_NAME --name $VOL_NAME --hostpath $HOST_DIR --transient"
-		vboxmanage sharedfolder add "$MACHINE_NAME" --name "$VOL_NAME" --hostpath "$HOST_DIR" --transient
+		if [ -z "$VERBOSE" ]; then
+				vboxmanage sharedfolder add "$MACHINE_NAME" --name "$VOL_NAME" --hostpath "$HOST_DIR" --transient > /dev/null 2>&1
+		else
+				vboxmanage sharedfolder add "$MACHINE_NAME" --name "$VOL_NAME" --hostpath "$HOST_DIR" --transient
+		fi
 
 		BO_log "$VERBOSE" "Running: docker-machine ssh $MACHINE_NAME \"sudo mount -t vboxsf -o uid=100,gid=100 \\"$VOL_NAME\\" \\"$HOST_DIR\\"\""
 		docker-machine ssh $MACHINE_NAME "sudo mount -t vboxsf -o uid=100,gid=100 \"$VOL_NAME\" \"$HOST_DIR\""

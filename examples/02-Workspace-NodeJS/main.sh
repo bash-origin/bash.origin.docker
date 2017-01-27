@@ -13,14 +13,14 @@ fi
 
 echo "TEST_MATCH_IGNORE>>>"
 
-BO_requireModule "../../docker.sh" as "localDocker" "localhost"
+BO_requireModule "../../_#_org.bashorigin_#_1.sh" as "localDocker" "localhost"
 
 pushd "${__BO_DIR__}/image" > /dev/null
 
 		localDocker force_build . "org.bashorigin.docker.test.02"
 
 
-		localDocker ensure_directory_mounted_into_docker_machine "${__BO_DIR__}/source" "/workspaces/source-02" "workspace"
+		localDocker ensure_directory_mounted_into_docker_machine "${__BO_DIR__}/source"
 
 
 		# TODO: Get free port dynamically
