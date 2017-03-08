@@ -3,7 +3,7 @@
   "name": "bash.origin.docker",
   "version": "0.1.0",
   "dependencies": {
-      "bash.origin.test": "^0.1.14"
+      "bash.origin.test": "^0.1.17"
   },
   "scripts": {
       "test": "bash.origin.test examples"
