@@ -197,9 +197,26 @@ function EXPORTS_start {
 
 	BO_log "$VERBOSE" "Run image '${image}' on host '${host}'"
 
-	BO_log "$VERBOSE" "Running: docker run -d -e BO_VERBOSE=${BO_VERBOSE} -e VERBOSE=${VERBOSE} -e DOCKER_HOST=${host} -p ${hostPort}:8080 ${*:3} ${image}"
+	# TODO: Determine internal port based on image schema
+	BO_log "$VERBOSE" "Running: docker run -d -e BO_VERBOSE=${BO_VERBOSE} -e VERBOSE=${VERBOSE} -e DOCKER_HOST=${host} -e AUTHORIZED_KEYS="`cat ~/.ssh/id_rsa.pub`" -p ${hostPort}:80 ${*:3} ${image}"
 
-  docker run -d -e DOCKER_HOST="${host}" -p "${hostPort}:8080" ${*:3} "${image}"
+  docker run -d -e BO_VERBOSE=${BO_VERBOSE} -e VERBOSE=${VERBOSE} -e DOCKER_HOST=${host} -e AUTHORIZED_KEYS="`cat ~/.ssh/id_rsa.pub`" -p "${hostPort}:80" ${*:3} "${image}"
+}
+
+function EXPORTS_run {
+	EXPORTS_activate
+
+	image="${1}"
+	# TODO: Support optionally passing a config file.
+
+	host="${_CONTAINER_HOST}"
+
+	BO_log "$VERBOSE" "Run image '${image}' on host '${host}'"
+
+	# TODO: Determine internal port based on image schema
+	BO_log "$VERBOSE" "Running: docker run -d -e BO_VERBOSE=${BO_VERBOSE} -e VERBOSE=${VERBOSE} -e DOCKER_HOST=${host} -e AUTHORIZED_KEYS="`cat ~/.ssh/id_rsa.pub`" ${*:2} ${image}"
+
+  docker run -ti --rm -m 1g -e BO_VERBOSE=${BO_VERBOSE} -e VERBOSE=${VERBOSE} -e DOCKER_HOST=${host} -e AUTHORIZED_KEYS="`cat ~/.ssh/id_rsa.pub`" ${*:2} "${image}"
 }
 
 function EXPORTS_logs {

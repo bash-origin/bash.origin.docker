@@ -6,7 +6,7 @@ const path = require("path");
 const fs = require("fs");
 
 const hostname = '0.0.0.0';
-const port = process.env.PORT || 8080;
+const port = process.env.PORT || 80;
 
 http.createServer(function (req, res) {
     console.log("Request:", req.url);
