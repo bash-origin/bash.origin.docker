@@ -13,7 +13,7 @@ fi
 
 echo "TEST_MATCH_IGNORE>>>"
 
-BO_requireModule "../../_#_org.bashorigin_#_1.sh" as "localDocker" "localhost"
+BO_requireModule "../../_#_org.bashorigin_#_s1.sh" as "localDocker" "localhost"
 
 pushd "${__BO_DIR__}/image" > /dev/null
 

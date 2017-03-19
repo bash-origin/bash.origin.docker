@@ -256,7 +256,7 @@ function EXPORTS_ensure_directory_mounted_into_docker_machine {
 		# NOTE: We mount our working directory to the same spot in the VM for
 		#       simplicity, consistency and to avoid conflicts.
 		HOST_DIR="$WORK_DIR"
-	  VOL_NAME="vol_$(echo -n "$HOST_DIR" | openssl sha1)"
+	    VOL_NAME="vol_$(echo -n "$HOST_DIR" | openssl sha1)"
 
 		BO_log "$VERBOSE" "Creating directory '$HOST_DIR' on docker-machine '$MACHINE_NAME'"
 		BO_log "$VERBOSE" "Running: docker-machine ssh \"$MACHINE_NAME\" \"sudo mkdir -p \"$HOST_DIR\"\""
