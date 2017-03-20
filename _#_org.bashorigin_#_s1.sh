@@ -219,6 +219,7 @@ function EXPORTS_build {
 
 			BO_log "$VERBOSE" "[bash.origin.docker] Running: docker build --build-arg BO_VERBOSE=${BO_VERBOSE} --build-arg VERBOSE=${VERBOSE} ${*:3} -t ${image} ."
 
+			# TODO: Only include build-args if found in docker file.
 			docker build --build-arg BO_VERBOSE=${BO_VERBOSE} --build-arg VERBOSE=${VERBOSE} ${*:3} -t "${image}" .
 
 	popd > /dev/null
