@@ -1,15 +1,10 @@
 #!/usr/bin/env bash.origin.script
 
 
-# TODO: Relocate into test helper
-if ! BO_if_os "osx"; then
-		echo "TODO: Support other operating systems."
-		echo "which docker: $(which docker)"
-		if BO_has docker; then
-			echo "docker --version: $(docker --version)"
-		fi
-		echo ">>>SKIP_TEST<<<"
-		exit 0
+if ! BO_has docker; then
+	echo "ERROR: 'docker' not found!"
+	echo ">>>SKIP_TEST<<<"
+	exit 0
 fi
 
 
