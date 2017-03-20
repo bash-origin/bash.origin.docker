@@ -1,11 +1,5 @@
 #!/usr/bin/env bash.origin.script
 
-if ! BO_has docker; then
-	echo "ERROR: 'docker' not found! (PATH: $PATH)"
-	echo ">>>SKIP_TEST<<<"
-	exit 0
-fi
-
 echo "TEST_MATCH_IGNORE>>>"
 
 depend {

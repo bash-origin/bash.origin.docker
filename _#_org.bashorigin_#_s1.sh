@@ -8,22 +8,25 @@ CONTAINER_HOST_LOGIN="${__ARG1__}"
 
 
 if ! BO_has docker; then
-		echo >&2 "ERROR: 'docker' command not found!"
-		exit 1
-fi
-if ! BO_has docker-machine; then
-		echo >&2 "ERROR: 'docker' command not found!"
-		exit 1
+	echo >&2 "[bash.origin.docker] ERROR: 'docker' command not found! (PATH: $PATH)"
+	exit 1
 fi
 
+
+if BO_if_os "osx"; then
+	if ! BO_has docker-machine; then
+		echo >&2 "[bash.origin.docker] ERROR: 'docker-machine' command not found! (PATH: $PATH)"
+		exit 1
+	fi
+fi
 
 function EXPORTS_login_to_container_host {
 	login="${CONTAINER_HOST_LOGIN}"
 
 	if [ "${CONTAINER_HOST_LOGIN}" == "localhost" ]; then
-		BO_log "$VERBOSE" "Use host container login: localhost"
+		BO_log "$VERBOSE" "[bash.origin.docker] Use host container login: localhost"
 	else
-		BO_log "$VERBOSE" "Use host container login: ${CONTAINER_HOST_LOGIN}"
+		BO_log "$VERBOSE" "[bash.origin.docker] Use host container login: ${CONTAINER_HOST_LOGIN}"
 
 		# TODO: Establish a tmux session we can keep going back to between
 		#       commands so we do not have to relogin for every command.
@@ -49,7 +52,7 @@ function EXPORTS_ensure_docker_host {
 	ip="${_CONTAINER_HOST_IP}"
 
 	if [ "${ip}" != "" ]; then
-		BO_log "$VERBOSE" "We already have a value for CONTAINER_HOST_IP: ${_CONTAINER_HOST_IP}"
+		BO_log "$VERBOSE" "[bash.origin.docker] We already have a value for CONTAINER_HOST_IP: ${_CONTAINER_HOST_IP}"
 		return
 	fi
 	# @see https://docs.docker.com/machine/get-started/
@@ -57,7 +60,7 @@ function EXPORTS_ensure_docker_host {
 
 		if [ "$(docker-machine ls --filter name=default | grep default)" == "" ]; then
 
-			BO_log "$VERBOSE" "Create new default docker-machine"
+			BO_log "$VERBOSE" "[bash.origin.docker] Create new default docker-machine"
 
 			# TODO Support other drivers
 			docker-machine create --driver virtualbox default
@@ -65,12 +68,12 @@ function EXPORTS_ensure_docker_host {
 		else
 			if [ "$(docker-machine ls --filter name=default --filter state=running | grep default)" == "" ]; then
 
-				BO_log "$VERBOSE" "Start default docker-machine"
+				BO_log "$VERBOSE" "[bash.origin.docker] Start default docker-machine"
 
 		    	docker-machine start default
 			fi
 		fi
-		BO_log "$VERBOSE" "Load default docker-machine env"
+		BO_log "$VERBOSE" "[bash.origin.docker] Load default docker-machine env"
     	function stopAndStart {
     	    # The machine may enter a timeout state and not be reachable.
     	    docker-machine stop default
@@ -109,15 +112,15 @@ function EXPORTS_stop {
 
 	# TODO: Determine if 'image' is a container ID or image name+tag
 
-	BO_log "$VERBOSE" "Stop containers for image '${image}'"
+	BO_log "$VERBOSE" "[bash.origin.docker] Stop containers for image '${image}'"
 
 	# TODO: Support stopping multiple containers.
 
-      existingContainers=`docker ps --filter ancestor="${image}" --format="{{.ID}}"`
-      if [ "${existingContainers}" != "" ]; then
-          echo "Stopping existing docker container: ${existingContainers}"
-  		docker stop "${existingContainers}"
-  	fi
+	existingContainers=`docker ps --filter ancestor="${image}" --format="{{.ID}}"`
+	if [ "${existingContainers}" != "" ]; then
+	  	BO_log "$VERBOSE" "[bash.origin.docker] Stopping existing docker container: ${existingContainers}"
+		docker stop "${existingContainers}"
+	fi
 
   	EXPORTS_remove_old_containers
 }
@@ -126,7 +129,7 @@ function EXPORTS_remove_old_containers {
       # Remove exited containers older than one hour
       oldContainers=`docker ps -a | grep -e 'Exited .* \(hour\|hours\|day\|days\) ago' | cut -d ' ' -f 1 | xargs echo`
       if [ "${oldContainers}" != "" ]; then
-          BO_log "$VERBOSE" "Removing old containers: ${oldContainers}"
+          BO_log "$VERBOSE" "[bash.origin.docker] Removing old containers: ${oldContainers}"
   		docker rm ${oldContainers} || true
   	fi
 }
@@ -141,7 +144,7 @@ function EXPORTS_remove_old_images {
       # TODO: Only remove old images with our name
       oldImages=`docker images -qa -f "dangling=true" | xargs echo`
       if [ "${oldImages}" != "" ]; then
-          BO_log "$VERBOSE" "Removing old images: ${oldImages}"
+          BO_log "$VERBOSE" "[bash.origin.docker] Removing old images: ${oldImages}"
   		docker rmi ${oldImages} || true
   	fi
 }
@@ -173,11 +176,11 @@ function EXPORTS_build {
       #       If the hash changes we generate a new build number.
 	EXPORTS_stop ${image}
 
-	BO_log "$VERBOSE" "Build image '${image}' from path '${path}'"
+	BO_log "$VERBOSE" "[bash.origin.docker] Build image '${image}' from path '${path}'"
 
 	pushd "${path}" > /dev/null
 
-			BO_log "$VERBOSE" "Running: docker build --build-arg BO_VERBOSE=${BO_VERBOSE} --build-arg VERBOSE=${VERBOSE} ${*:3} -t ${image} ."
+			BO_log "$VERBOSE" "[bash.origin.docker] Running: docker build --build-arg BO_VERBOSE=${BO_VERBOSE} --build-arg VERBOSE=${VERBOSE} ${*:3} -t ${image} ."
 
 			docker build --build-arg BO_VERBOSE=${BO_VERBOSE} --build-arg VERBOSE=${VERBOSE} ${*:3} -t "${image}" .
 
@@ -195,10 +198,10 @@ function EXPORTS_start {
 
 	host="${_CONTAINER_HOST}"
 
-	BO_log "$VERBOSE" "Run image '${image}' on host '${host}'"
+	BO_log "$VERBOSE" "[bash.origin.docker] Run image '${image}' on host '${host}'"
 
 	# TODO: Determine internal port based on image schema
-	BO_log "$VERBOSE" "Running: docker run -d -e BO_VERBOSE=${BO_VERBOSE} -e VERBOSE=${VERBOSE} -e DOCKER_HOST=${host} -e AUTHORIZED_KEYS="`cat ~/.ssh/id_rsa.pub`" -p ${hostPort}:80 ${*:3} ${image}"
+	BO_log "$VERBOSE" "[bash.origin.docker] Running: docker run -d -e BO_VERBOSE=${BO_VERBOSE} -e VERBOSE=${VERBOSE} -e DOCKER_HOST=${host} -e AUTHORIZED_KEYS="`cat ~/.ssh/id_rsa.pub`" -p ${hostPort}:80 ${*:3} ${image}"
 
   docker run -d -e BO_VERBOSE=${BO_VERBOSE} -e VERBOSE=${VERBOSE} -e DOCKER_HOST=${host} -e AUTHORIZED_KEYS="`cat ~/.ssh/id_rsa.pub`" -p "${hostPort}:80" ${*:3} "${image}"
 }
@@ -211,10 +214,10 @@ function EXPORTS_run {
 
 	host="${_CONTAINER_HOST}"
 
-	BO_log "$VERBOSE" "Run image '${image}' on host '${host}'"
+	BO_log "$VERBOSE" "[bash.origin.docker] Run image '${image}' on host '${host}'"
 
 	# TODO: Determine internal port based on image schema
-	BO_log "$VERBOSE" "Running: docker run -d -e BO_VERBOSE=${BO_VERBOSE} -e VERBOSE=${VERBOSE} -e DOCKER_HOST=${host} -e AUTHORIZED_KEYS="`cat ~/.ssh/id_rsa.pub`" ${*:2} ${image}"
+	BO_log "$VERBOSE" "[bash.origin.docker] Running: docker run -d -e BO_VERBOSE=${BO_VERBOSE} -e VERBOSE=${VERBOSE} -e DOCKER_HOST=${host} -e AUTHORIZED_KEYS="`cat ~/.ssh/id_rsa.pub`" ${*:2} ${image}"
 
   docker run -ti --rm -m 1g -e BO_VERBOSE=${BO_VERBOSE} -e VERBOSE=${VERBOSE} -e DOCKER_HOST=${host} -e AUTHORIZED_KEYS="`cat ~/.ssh/id_rsa.pub`" ${*:2} "${image}"
 }
@@ -227,18 +230,18 @@ function EXPORTS_logs {
 	container=`docker ps -a --filter ancestor="${image}" --format="{{.ID}}" | head -1`
 
 	if [ "${container}" == "" ]; then
-		echo "WARNING: No container found for image '${image}'";
+		echo "[bash.origin.docker] WARNING: No container found for image '${image}'";
 		return 1;
 	fi
 
-	BO_log "$VERBOSE" "Get latest container '${container}' logs for image '${image}'"
+	BO_log "$VERBOSE" "[bash.origin.docker] Get latest container '${container}' logs for image '${image}'"
 
 	if [ ! -z "$VERBOSE" ]; then
-		echo "----- logs for container '${container}' based on image '${image}' -----"
+		echo "[bash.origin.docker] ----- logs for container '${container}' based on image '${image}' -----"
 	fi
       docker logs ${*:2} -t "${container}"
 	if [ ! -z "$VERBOSE" ]; then
-		echo "----- end logs -----"
+		echo "[bash.origin.docker] ----- end logs -----"
 	fi
 }
 
@@ -247,7 +250,7 @@ function EXPORTS_ensure_directory_mounted_into_docker_machine {
 		# @see http://stackoverflow.com/a/33404132/330439
 
 		if ! BO_has openssl; then
-				echo "ERROR: 'openssl' command required!"
+				echo "[bash.origin.docker] ERROR: 'openssl' command required!"
 				exit 1
 		fi
 
@@ -258,18 +261,18 @@ function EXPORTS_ensure_directory_mounted_into_docker_machine {
 		HOST_DIR="$WORK_DIR"
 	    VOL_NAME="vol_$(echo -n "$HOST_DIR" | openssl sha1)"
 
-		BO_log "$VERBOSE" "Creating directory '$HOST_DIR' on docker-machine '$MACHINE_NAME'"
-		BO_log "$VERBOSE" "Running: docker-machine ssh \"$MACHINE_NAME\" \"sudo mkdir -p \"$HOST_DIR\"\""
+		BO_log "$VERBOSE" "[bash.origin.docker] Creating directory '$HOST_DIR' on docker-machine '$MACHINE_NAME'"
+		BO_log "$VERBOSE" "[bash.origin.docker] Running: docker-machine ssh \"$MACHINE_NAME\" \"sudo mkdir -p \"$HOST_DIR\"\""
 		docker-machine ssh "$MACHINE_NAME" "sudo mkdir -p \"$HOST_DIR\""
 
-		BO_log "$VERBOSE" "Sharing work directory '$WORK_DIR' to docker-machine '$MACHINE_NAME' into directory '$HOST_DIR' using volume name '$VOL_NAME'"
-		BO_log "$VERBOSE" "Running: vboxmanage sharedfolder add $MACHINE_NAME --name $VOL_NAME --hostpath $HOST_DIR --transient"
+		BO_log "$VERBOSE" "[bash.origin.docker] Sharing work directory '$WORK_DIR' to docker-machine '$MACHINE_NAME' into directory '$HOST_DIR' using volume name '$VOL_NAME'"
+		BO_log "$VERBOSE" "[bash.origin.docker] Running: vboxmanage sharedfolder add $MACHINE_NAME --name $VOL_NAME --hostpath $HOST_DIR --transient"
 		if [ -z "$VERBOSE" ]; then
 				vboxmanage sharedfolder add "$MACHINE_NAME" --name "$VOL_NAME" --hostpath "$HOST_DIR" --transient > /dev/null 2>&1
 		else
 				vboxmanage sharedfolder add "$MACHINE_NAME" --name "$VOL_NAME" --hostpath "$HOST_DIR" --transient
 		fi
 
-		BO_log "$VERBOSE" "Running: docker-machine ssh $MACHINE_NAME \"sudo mount -t vboxsf -o uid=100,gid=100 \\"$VOL_NAME\\" \\"$HOST_DIR\\"\""
+		BO_log "$VERBOSE" "[bash.origin.docker] Running: docker-machine ssh $MACHINE_NAME \"sudo mount -t vboxsf -o uid=100,gid=100 \\"$VOL_NAME\\" \\"$HOST_DIR\\"\""
 		docker-machine ssh $MACHINE_NAME "sudo mount -t vboxsf -o uid=100,gid=100 \"$VOL_NAME\" \"$HOST_DIR\""
 }
