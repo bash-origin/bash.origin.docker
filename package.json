@@ -1,7 +1,7 @@
 {
     "uid": "github.com/bash-origin/bash.origin.docker",
     "name": "bash.origin.docker",
-    "version": "0.1.1",
+    "version": "0.1.2",
     "dependencies": {
         "bash.origin.test": "^0.1.24"
     },
