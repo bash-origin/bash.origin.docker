@@ -1,7 +1,7 @@
 #!/usr/bin/env bash.origin.script
 
-if ! BO_if_os "osx"; then
-	echo "TODO: Support other operating systems."
+if ! BO_has docker; then
+	echo "ERROR: 'docker' not found! (PATH: $PATH)"
 	echo ">>>SKIP_TEST<<<"
 	exit 0
 fi
