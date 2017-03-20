@@ -21,7 +21,7 @@ CALL_docker list
 
 local rid=`uuidgen`
 CALL_request wait 10 200 \
-	"http://${DOCKER_CONTAINER_HOST_IP}:${port}/?rid=$rid" \
+	"http://$(CALL_docker echo_CONTAINER_HOST_IP):${port}/?rid=$rid" \
 	"Hello World from dockerized NodeJS process! [rid:$rid]"
 
 

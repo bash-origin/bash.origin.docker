@@ -55,6 +55,11 @@ function EXPORTS_reprovision_docker_host {
 		fi
 }
 
+function EXPORTS_echo_CONTAINER_HOST_IP {
+	EXPORTS_ensure_docker_host
+	echo "$_CONTAINER_HOST_IP"
+}
+
 function EXPORTS_ensure_docker_host {
 
 	BO_log "$VERBOSE" "[bash.origin.docker] ensure_docker_host() args: $@"

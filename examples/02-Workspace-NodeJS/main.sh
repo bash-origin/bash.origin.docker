@@ -33,7 +33,7 @@ pushd "$__DIRNAME__/image" > /dev/null
 
 			local rid=`uuidgen`
 			CALL_request wait 10 200 \
-				"http://${DOCKER_CONTAINER_HOST_IP}:${port}/?rid=${rid}" \
+				"http://$(CALL_docker echo_CONTAINER_HOST_IP):${port}/?rid=${rid}" \
 				"Hello World from dockerized NodeJS process! [${1}][rid:${rid}]"
 
 			CALL_docker logs "org.bashorigin.docker.test.02"
