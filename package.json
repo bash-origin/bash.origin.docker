@@ -3,9 +3,9 @@
     "name": "bash.origin.docker",
     "version": "0.1.1",
     "dependencies": {
-        "bash.origin.test": "^0.1.17"
+        "bash.origin.test": "^0.1.24"
     },
     "scripts": {
-        "test": "bash.origin.test examples"
+        "test": "BO_ROOT_SCRIPT_PATH=$(pwd)/node_modules/bash.origin/bash.origin bash.origin.test examples"
     }
 }

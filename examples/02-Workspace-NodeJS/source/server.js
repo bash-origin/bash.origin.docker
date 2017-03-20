@@ -13,7 +13,7 @@ http.createServer(function (req, res) {
     res.writeHead(200, {
         'Content-Type': 'text/plain'
     });
-    res.end('Hello World from dockerized NodeJS process [' + fs.readFileSync(path.join(__dirname, "file.txt"), "utf8") + ']!');
+    res.end('Hello World from dockerized NodeJS process! [' + fs.readFileSync(path.join(__dirname, "file.txt"), "utf8") + '][rid:' + req.url.replace(/^\/\?rid=/, '') + ']');
 }).listen(port, hostname, function () {
     console.log(`Server running at http://${hostname}:${port}/`);
 });

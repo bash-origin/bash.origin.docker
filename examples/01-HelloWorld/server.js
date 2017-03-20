@@ -14,7 +14,7 @@ http.createServer(function (req, res) {
         'Content-Type': 'text/plain'
     });
 
-    res.end('Hello World from dockerized NodeJS process!');
+    res.end('Hello World from dockerized NodeJS process! [rid:' + req.url.replace(/^\/\?rid=/, '') + ']');
 
 }).listen(port, hostname, function () {
 
