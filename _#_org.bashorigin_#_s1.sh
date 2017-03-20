@@ -42,12 +42,21 @@ function EXPORTS_reprovision_docker_host {
 
 		EXPORTS_ensure_docker_host
 
-		docker-machine stop default
-		docker-machine rm -f default
-		docker-machine create --driver virtualbox default
+		if BO_has docker-machine; then
+
+			docker-machine stop default
+			docker-machine rm -f default
+			docker-machine create --driver virtualbox default
+		fi
 }
 
 function EXPORTS_ensure_docker_host {
+
+	if ! BO_has docker-machine; then
+		export _CONTAINER_HOST="tcp://127.0.0.1:2375"
+		export _CONTAINER_HOST_IP="127.0.0.1"
+		return
+	fi
 
 	ip="${_CONTAINER_HOST_IP}"
 
@@ -248,6 +257,11 @@ function EXPORTS_logs {
 
 function EXPORTS_ensure_directory_mounted_into_docker_machine {
 		# @see http://stackoverflow.com/a/33404132/330439
+
+		if ! BO_has docker-machine; then
+			echo >&2 "[bash.origin.docker] ERROR: 'docker-machine' command not found! (PATH: $PATH)"
+			exit 1
+		fi
 
 		if ! BO_has openssl; then
 				echo "[bash.origin.docker] ERROR: 'openssl' command required!"
