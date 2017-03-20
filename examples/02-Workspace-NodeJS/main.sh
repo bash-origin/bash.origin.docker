@@ -1,13 +1,12 @@
 #!/usr/bin/env bash.origin.script
 
-
-# TODO: Relocate into test helper
 if ! BO_if_os "osx"; then
 	echo "TODO: Support other operating systems."
 	echo ">>>SKIP_TEST<<<"
 	exit 0
 fi
 
+echo "TEST_MATCH_IGNORE>>>"
 
 depend {
     "docker": {
@@ -15,9 +14,6 @@ depend {
 	},
 	"request": "@com.github/bash-origin/bash.origin.request#s1"
 }
-
-
-echo "TEST_MATCH_IGNORE>>>"
 
 pushd "$__DIRNAME__/image" > /dev/null
 

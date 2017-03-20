@@ -1,12 +1,12 @@
 #!/usr/bin/env bash.origin.script
 
-
 if ! BO_has docker; then
 	echo "ERROR: 'docker' not found!"
 	echo ">>>SKIP_TEST<<<"
 	exit 0
 fi
 
+echo "TEST_MATCH_IGNORE>>>"
 
 depend {
     "docker": {
@@ -14,9 +14,6 @@ depend {
 	},
 	"request": "@com.github/bash-origin/bash.origin.request#s1"
 }
-
-
-echo "TEST_MATCH_IGNORE>>>"
 
 CALL_docker list -a
 
