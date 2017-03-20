@@ -21,6 +21,9 @@ if BO_if_os "osx"; then
 fi
 
 function EXPORTS_login_to_container_host {
+
+	BO_log "$VERBOSE" "[bash.origin.docker] login_to_container_host() args: $@"
+
 	login="${CONTAINER_HOST_LOGIN}"
 
 	if [ "${CONTAINER_HOST_LOGIN}" == "localhost" ]; then
@@ -40,6 +43,8 @@ exit 1
 #       run this method (only when running with --autofix)
 function EXPORTS_reprovision_docker_host {
 
+	BO_log "$VERBOSE" "[bash.origin.docker] reprovision_docker_host() args: $@"
+
 		EXPORTS_ensure_docker_host
 
 		if BO_has docker-machine; then
@@ -51,6 +56,8 @@ function EXPORTS_reprovision_docker_host {
 }
 
 function EXPORTS_ensure_docker_host {
+
+	BO_log "$VERBOSE" "[bash.origin.docker] ensure_docker_host() args: $@"
 
 	if ! BO_has docker-machine; then
 		export _CONTAINER_HOST="tcp://127.0.0.1:2375"
@@ -99,23 +106,34 @@ function EXPORTS_ensure_docker_host {
 }
 
 function EXPORTS_activate {
+
+	BO_log "$VERBOSE" "[bash.origin.docker] activate() args: $@"
+
 	EXPORTS_login_to_container_host
 	EXPORTS_ensure_docker_host
 }
 
 
 function EXPORTS_list {
+
+	BO_log "$VERBOSE" "[bash.origin.docker] list() args: $@"
+
 	EXPORTS_activate
 	docker ps $@
 }
 
 function EXPORTS_restart {
+
+	BO_log "$VERBOSE" "[bash.origin.docker] restart() args: $@"
+
 	EXPORTS_stop "$@"
 	EXPORTS_start "$@"
 }
 
 function EXPORTS_stop {
 	EXPORTS_activate
+
+	BO_log "$VERBOSE" "[bash.origin.docker] stop() args: $@"
 
 	image="${1}"
 
@@ -135,6 +153,9 @@ function EXPORTS_stop {
 }
 
 function EXPORTS_remove_old_containers {
+
+	BO_log "$VERBOSE" "[bash.origin.docker] remove_old_containers() args: $@"
+
       # Remove exited containers older than one hour
       oldContainers=`docker ps -a | grep -e 'Exited .* \(hour\|hours\|day\|days\) ago' | cut -d ' ' -f 1 | xargs echo`
       if [ "${oldContainers}" != "" ]; then
@@ -148,6 +169,8 @@ function EXPORTS_remove_old_images {
 	# removed if there are no containers based on them.
   	EXPORTS_remove_old_containers
 
+	BO_log "$VERBOSE" "[bash.origin.docker] remove_old_images() args: $@"
+
       # Remove old (dangling) image builds
       # TODO: Keep a few old versioned image builds around
       # TODO: Only remove old images with our name
@@ -160,12 +183,17 @@ function EXPORTS_remove_old_images {
 
 
 function EXPORTS_force_build {
+
+	BO_log "$VERBOSE" "[bash.origin.docker] force_build() args: $@"
+
 		EXPORTS_build "$@" --no-cache=true
 }
 
 function EXPORTS_build {
 
 	EXPORTS_activate
+
+	BO_log "$VERBOSE" "[bash.origin.docker] build() args: $@"
 
 	path="${1}"
 	if [ "$path" == "." ]; then
@@ -195,11 +223,16 @@ function EXPORTS_build {
 
 	popd > /dev/null
 
+	# Don't exit on error.
+	set +e
 	EXPORTS_remove_old_images
+	set -e
 }
 
 function EXPORTS_start {
 	EXPORTS_activate
+
+	BO_log "$VERBOSE" "[bash.origin.docker] start() args: $@"
 
 	image="${1}"
 	hostPort="${2}"
@@ -218,6 +251,8 @@ function EXPORTS_start {
 function EXPORTS_run {
 	EXPORTS_activate
 
+	BO_log "$VERBOSE" "[bash.origin.docker] run() args: $@"
+
 	image="${1}"
 	# TODO: Support optionally passing a config file.
 
@@ -233,6 +268,8 @@ function EXPORTS_run {
 
 function EXPORTS_logs {
 	EXPORTS_activate
+
+	BO_log "$VERBOSE" "[bash.origin.docker] logs() args: $@"
 
 	image="${1}"
 
@@ -257,6 +294,8 @@ function EXPORTS_logs {
 
 function EXPORTS_ensure_directory_mounted_into_docker_machine {
 		# @see http://stackoverflow.com/a/33404132/330439
+
+	BO_log "$VERBOSE" "[bash.origin.docker] ensure_directory_mounted_into_docker_machine() args: $@"
 
 		if ! BO_has docker-machine; then
 			echo >&2 "[bash.origin.docker] ERROR: 'docker-machine' command not found! (PATH: $PATH)"
