@@ -2,7 +2,7 @@
 
 # TODO: Support optionally passing a config file path for the second argument.
 
-local $CONTAINER_HOST_LOGIN
+local $CONTAINER_HOST_LOGIN=""
 
 CONTAINER_HOST_LOGIN="${__ARG1__}"
 
@@ -33,7 +33,7 @@ function EXPORTS_login_to_container_host {
 
 		# TODO: Establish a tmux session we can keep going back to between
 		#       commands so we do not have to relogin for every command.
-echo "TODO"
+echo "TODO: bash.origin.docker - login_to_container_host"
 exit 1
 	fi
 }
@@ -114,10 +114,10 @@ function EXPORTS_activate {
 
 	BO_log "$VERBOSE" "[bash.origin.docker] activate() args: $@"
 
-	EXPORTS_login_to_container_host
+# TODO: Work in progress
+#	EXPORTS_login_to_container_host
 	EXPORTS_ensure_docker_host
 }
-
 
 function EXPORTS_list {
 
@@ -162,7 +162,7 @@ function EXPORTS_remove_old_containers {
 	BO_log "$VERBOSE" "[bash.origin.docker] remove_old_containers() args: $@"
 
       # Remove exited containers older than one hour
-      oldContainers=`docker ps -a | grep -e 'Exited .* \(hour\|hours\|day\|days\) ago' | cut -d ' ' -f 1 | xargs echo`
+      oldContainers=`docker ps -a | grep -e 'Exited .* \(hour\|hours\|day\|days\|week\|weeks\) ago' | cut -d ' ' -f 1 | xargs echo`
       if [ "${oldContainers}" != "" ]; then
           BO_log "$VERBOSE" "[bash.origin.docker] Removing old containers: ${oldContainers}"
   		docker rm ${oldContainers} || true
@@ -222,10 +222,10 @@ function EXPORTS_build {
 
 	pushd "${path}" > /dev/null
 
-			BO_log "$VERBOSE" "[bash.origin.docker] Running: docker build --build-arg BO_VERBOSE=${BO_VERBOSE} --build-arg VERBOSE=${VERBOSE} ${*:3} -t ${image} ."
+		BO_log "$VERBOSE" "[bash.origin.docker] Running: docker build --build-arg BO_VERBOSE=${BO_VERBOSE} --build-arg VERBOSE=${VERBOSE} ${*:3} -t ${image} ."
 
-			# TODO: Only include build-args if found in docker file.
-			docker build --build-arg BO_VERBOSE=${BO_VERBOSE} --build-arg VERBOSE=${VERBOSE} ${*:3} -t "${image}" .
+		# TODO: Only include build-args if found in docker file.
+		docker build --build-arg BO_VERBOSE=${BO_VERBOSE} --build-arg VERBOSE=${VERBOSE} ${*:3} -t "${image}" .
 
 	popd > /dev/null
 
