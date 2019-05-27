@@ -9,14 +9,27 @@ CONTAINER_HOST_LOGIN="${__ARG1__}"
 
 if ! BO_has docker; then
 	echo >&2 "[bash.origin.docker] ERROR: 'docker' command not found! (PATH: $PATH)"
+	echo >&2 "[bash.origin.docker] Download from: https://hub.docker.com/editions/community/docker-ce-desktop-mac"
 	exit 1
 fi
 
+USE_DOCKER_MACHINE=0
 
 if BO_if_os "osx"; then
-	if ! BO_has docker-machine; then
-		echo >&2 "[bash.origin.docker] ERROR: 'docker-machine' command not found! (PATH: $PATH)"
-		exit 1
+	if ! docker ps > /dev/null; then
+		echo >&2 "[bash.origin.docker] ERROR: The 'docker' command is failing because docker is not started. If you have 'docker for mac' installed, start docker now via the status bar icon. If you want to use 'docker-machine' set an environment variable 'FORCE_USE_DOCKER_MACHINE' (PATH: $PATH)"
+
+		if [ ! -z "$FORCE_USE_DOCKER_MACHINE" ]; then
+			if ! BO_has docker-machine; then
+				echo >&2 "[bash.origin.docker] ERROR: 'docker-machine' command not found! (PATH: $PATH)"
+				exit 1
+			fi
+			if ! BO_has vboxmanage; then
+				echo >&2 "[bash.origin.docker] ERROR: 'vboxmanage' command not found! Install VirtualBox. (PATH: $PATH)"
+				exit 1
+			fi
+			USE_DOCKER_MACHINE=1
+		fi
 	fi
 fi
 
@@ -43,24 +56,41 @@ exit 1
 #       run this method (only when running with --autofix)
 function EXPORTS_reprovision_docker_host {
 
+	if [[ $USE_DOCKER_MACHINE != 1 ]]; then
+		echo >&2 "[bash.origin.docker] ERROR: 'reprovision_docker_host' command not enabled due to 'USE_DOCKER_MACHINE = 0'"
+		return;
+	fi
+
 	BO_log "$VERBOSE" "[bash.origin.docker] reprovision_docker_host() args: $@"
 
-		EXPORTS_ensure_docker_host
+	EXPORTS_ensure_docker_host
 
-		if BO_has docker-machine; then
+	if BO_has docker-machine; then
 
-			docker-machine stop default
-			docker-machine rm -f default
-			docker-machine create --driver virtualbox default
-		fi
+		docker-machine stop default
+		docker-machine rm -f default
+		docker-machine create --driver virtualbox default
+	fi
 }
 
 function EXPORTS_echo_CONTAINER_HOST_IP {
+
+	if [[ $USE_DOCKER_MACHINE != 1 ]]; then
+		# @see https://stackoverflow.com/a/41475171
+		echo "127.0.0.1"
+		return;
+	fi
+
 	EXPORTS_ensure_docker_host
 	echo "$_CONTAINER_HOST_IP"
 }
 
 function EXPORTS_ensure_docker_host {
+
+	if [[ $USE_DOCKER_MACHINE != 1 ]]; then
+		echo >&2 "[bash.origin.docker] ERROR: 'ensure_docker_host' command not enabled due to 'USE_DOCKER_MACHINE = 0'"
+		return;
+	fi
 
 	BO_log "$VERBOSE" "[bash.origin.docker] ensure_docker_host() args: $@"
 
@@ -114,9 +144,9 @@ function EXPORTS_activate {
 
 	BO_log "$VERBOSE" "[bash.origin.docker] activate() args: $@"
 
-# TODO: Work in progress
-#	EXPORTS_login_to_container_host
-	EXPORTS_ensure_docker_host
+	if [[ $USE_DOCKER_MACHINE == 1 ]]; then
+		EXPORTS_ensure_docker_host
+	fi
 }
 
 function EXPORTS_list {
@@ -161,10 +191,10 @@ function EXPORTS_remove_old_containers {
 
 	BO_log "$VERBOSE" "[bash.origin.docker] remove_old_containers() args: $@"
 
-      # Remove exited containers older than one hour
-      oldContainers=`docker ps -a | grep -e 'Exited .* \(hour\|hours\|day\|days\|week\|weeks\) ago' | cut -d ' ' -f 1 | xargs echo`
-      if [ "${oldContainers}" != "" ]; then
-          BO_log "$VERBOSE" "[bash.origin.docker] Removing old containers: ${oldContainers}"
+	# Remove exited containers older than one hour
+	oldContainers=`docker ps -a | grep -e 'Exited .* \(hour\|hours\|day\|days\|week\|weeks\) ago' | cut -d ' ' -f 1 | xargs echo`
+	if [ "${oldContainers}" != "" ]; then
+		BO_log "$VERBOSE" "[bash.origin.docker] Removing old containers: ${oldContainers}"
   		docker rm ${oldContainers} || true
   	fi
 }
@@ -191,7 +221,7 @@ function EXPORTS_force_build {
 
 	BO_log "$VERBOSE" "[bash.origin.docker] force_build() args: $@"
 
-		EXPORTS_build "$@" --no-cache=true
+	EXPORTS_build "$@" --no-cache=true
 }
 
 function EXPORTS_build {
@@ -299,7 +329,14 @@ function EXPORTS_logs {
 
 
 function EXPORTS_ensure_directory_mounted_into_docker_machine {
-		# @see http://stackoverflow.com/a/33404132/330439
+
+	if [[ $USE_DOCKER_MACHINE != 1 ]]; then
+		echo >&2 "[bash.origin.docker] ERROR: 'ensure_directory_mounted_into_docker_machine' command not enabled due to 'USE_DOCKER_MACHINE = 0'"
+		echo >&2 "[bash.origin.docker] ERROR: If you are using 'docker for mac' you need to enable sharing via 'configure shared paths from Docker -> Preferences... -> File Sharing' via docker status bar icon."
+		return;
+	fi
+
+	# @see http://stackoverflow.com/a/33404132/330439
 
 	BO_log "$VERBOSE" "[bash.origin.docker] ensure_directory_mounted_into_docker_machine() args: $@"
 
