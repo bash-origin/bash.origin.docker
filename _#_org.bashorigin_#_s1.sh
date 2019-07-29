@@ -194,26 +194,26 @@ function EXPORTS_remove_old_containers {
 	# Remove exited containers older than one hour
 	oldContainers=`docker ps -a | grep -e 'Exited .* \(hour\|hours\|day\|days\|week\|weeks\) ago' | cut -d ' ' -f 1 | xargs echo`
 	if [ "${oldContainers}" != "" ]; then
-		BO_log "$VERBOSE" "[bash.origin.docker] Removing old containers: ${oldContainers}"
+			BO_log "$VERBOSE" "[bash.origin.docker] Removing old containers: ${oldContainers}"
   		docker rm ${oldContainers} || true
-  	fi
+	fi
 }
 
 function EXPORTS_remove_old_images {
-	# First we remove old containers as images may only be
-	# removed if there are no containers based on them.
+		# First we remove old containers as images may only be
+		# removed if there are no containers based on them.
   	EXPORTS_remove_old_containers
 
-	BO_log "$VERBOSE" "[bash.origin.docker] remove_old_images() args: $@"
+		BO_log "$VERBOSE" "[bash.origin.docker] remove_old_images() args: $@"
 
-      # Remove old (dangling) image builds
-      # TODO: Keep a few old versioned image builds around
-      # TODO: Only remove old images with our name
-      oldImages=`docker images -qa -f "dangling=true" | xargs echo`
-      if [ "${oldImages}" != "" ]; then
-          BO_log "$VERBOSE" "[bash.origin.docker] Removing old images: ${oldImages}"
-  		docker rmi ${oldImages} || true
-  	fi
+		# Remove old (dangling) image builds
+		# TODO: Keep a few old versioned image builds around
+		# TODO: Only remove old images with our name
+		oldImages=`docker images -qa -f "dangling=true" | xargs echo`
+		if [ "${oldImages}" != "" ]; then
+				BO_log "$VERBOSE" "[bash.origin.docker] Removing old images: ${oldImages}"
+				docker rmi ${oldImages} || true
+		fi
 }
 
 
@@ -278,10 +278,15 @@ function EXPORTS_start {
 
 	BO_log "$VERBOSE" "[bash.origin.docker] Run image '${image}' on host '${host}'"
 
-	# TODO: Determine internal port based on image schema
-	BO_log "$VERBOSE" "[bash.origin.docker] Running: docker run -d -e BO_VERBOSE=${BO_VERBOSE} -e VERBOSE=${VERBOSE} -e DOCKER_HOST=${host} -e AUTHORIZED_KEYS="`cat ~/.ssh/id_rsa.pub`" -p ${hostPort}:80 ${*:3} ${image}"
 
-  docker run -d -e BO_VERBOSE=${BO_VERBOSE} -e VERBOSE=${VERBOSE} -e DOCKER_HOST=${host} -e AUTHORIZED_KEYS="`cat ~/.ssh/id_rsa.pub`" -p "${hostPort}:80" ${*:3} "${image}"
+	# TODO: Determine internal port based on image schema
+	BO_log "$VERBOSE" "[bash.origin.docker] Running: docker run -d -e BO_VERBOSE=${BO_VERBOSE} -e VERBOSE=${VERBOSE} -e DOCKER_HOST=${host} -p ${hostPort}:80 ${*:3} ${image}"
+
+  docker run -d -e BO_VERBOSE=${BO_VERBOSE} -e VERBOSE=${VERBOSE} -e DOCKER_HOST=${host} -p "${hostPort}:80" ${*:3} "${image}"
+
+	# TODO: Optionally set 'AUTHORIZED_KEYS'
+	#BO_log "$VERBOSE" "[bash.origin.docker] Running: docker run -d -e BO_VERBOSE=${BO_VERBOSE} -e VERBOSE=${VERBOSE} -e DOCKER_HOST=${host} -e AUTHORIZED_KEYS="`cat ~/.ssh/id_rsa.pub`" -p ${hostPort}:80 ${*:3} ${image}"
+  #docker run -d -e BO_VERBOSE=${BO_VERBOSE} -e VERBOSE=${VERBOSE} -e DOCKER_HOST=${host} -e AUTHORIZED_KEYS="`cat ~/.ssh/id_rsa.pub`" -p "${hostPort}:80" ${*:3} "${image}"
 }
 
 function EXPORTS_run {
@@ -293,13 +298,43 @@ function EXPORTS_run {
 	# TODO: Support optionally passing a config file.
 
 	host="${_CONTAINER_HOST}"
+	hostPort="${2}"
 
 	BO_log "$VERBOSE" "[bash.origin.docker] Run image '${image}' on host '${host}'"
 
-	# TODO: Determine internal port based on image schema
-	BO_log "$VERBOSE" "[bash.origin.docker] Running: docker run -d -e BO_VERBOSE=${BO_VERBOSE} -e VERBOSE=${VERBOSE} -e DOCKER_HOST=${host} -e AUTHORIZED_KEYS="`cat ~/.ssh/id_rsa.pub`" ${*:2} ${image}"
 
-  docker run -ti --rm -m 1g -e BO_VERBOSE=${BO_VERBOSE} -e VERBOSE=${VERBOSE} -e DOCKER_HOST=${host} -e AUTHORIZED_KEYS="`cat ~/.ssh/id_rsa.pub`" ${*:2} "${image}"
+	# TODO: Determine internal port based on image schema
+	BO_log "$VERBOSE" "[bash.origin.docker] Running: docker run -d -e BO_VERBOSE=${BO_VERBOSE} -e VERBOSE=${VERBOSE} -e DOCKER_HOST=${host} -p "${hostPort}:80" ${*:3} ${image}"
+
+  docker run -ti --rm -m 1g -e BO_VERBOSE=${BO_VERBOSE} -e VERBOSE=${VERBOSE} -e DOCKER_HOST=${host} -p "${hostPort}:80" ${*:3} "${image}"
+
+	# TODO: Optionally set 'AUTHORIZED_KEYS'
+	#BO_log "$VERBOSE" "[bash.origin.docker] Running: docker run -d -e BO_VERBOSE=${BO_VERBOSE} -e VERBOSE=${VERBOSE} -e DOCKER_HOST=${host} -e AUTHORIZED_KEYS="`cat ~/.ssh/id_rsa.pub`" ${*:2} ${image}"
+  #docker run -ti --rm -m 1g -e BO_VERBOSE=${BO_VERBOSE} -e VERBOSE=${VERBOSE} -e DOCKER_HOST=${host} -e AUTHORIZED_KEYS="`cat ~/.ssh/id_rsa.pub`" ${*:2} "${image}"
+}
+
+function EXPORTS_run_no_tty {
+	EXPORTS_activate
+
+	BO_log "$VERBOSE" "[bash.origin.docker] run() args: $@"
+
+	image="${1}"
+	# TODO: Support optionally passing a config file.
+
+	host="${_CONTAINER_HOST}"
+	hostPort="${2}"
+
+	BO_log "$VERBOSE" "[bash.origin.docker] Run image '${image}' on host '${host}'"
+
+
+	# TODO: Determine internal port based on image schema
+	BO_log "$VERBOSE" "[bash.origin.docker] Running: docker run -d -e BO_VERBOSE=${BO_VERBOSE} -e VERBOSE=${VERBOSE} -e DOCKER_HOST=${host} -p "${hostPort}:80" ${*:3} ${image}"
+
+  docker run --rm -m 1g -e BO_VERBOSE=${BO_VERBOSE} -e VERBOSE=${VERBOSE} -e DOCKER_HOST=${host} -p "${hostPort}:80" ${*:3} "${image}"
+
+	# TODO: Optionally set 'AUTHORIZED_KEYS'
+	#BO_log "$VERBOSE" "[bash.origin.docker] Running: docker run -d -e BO_VERBOSE=${BO_VERBOSE} -e VERBOSE=${VERBOSE} -e DOCKER_HOST=${host} -e AUTHORIZED_KEYS="`cat ~/.ssh/id_rsa.pub`" ${*:2} ${image}"
+  #docker run -ti --rm -m 1g -e BO_VERBOSE=${BO_VERBOSE} -e VERBOSE=${VERBOSE} -e DOCKER_HOST=${host} -e AUTHORIZED_KEYS="`cat ~/.ssh/id_rsa.pub`" ${*:2} "${image}"
 }
 
 function EXPORTS_logs {
