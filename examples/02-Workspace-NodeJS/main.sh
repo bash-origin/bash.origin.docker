@@ -20,7 +20,7 @@ pushd "$__DIRNAME__/image" > /dev/null
 		CALL_docker force_build . "org.bashorigin.docker.test.02"
 
 
-		CALL_docker ensure_directory_mounted_into_docker_machine "$__DIRNAME__/source"
+		#CALL_docker ensure_directory_mounted_into_docker_machine "$__DIRNAME__/source"
 
 
 		# TODO: Get free port dynamically
@@ -32,7 +32,7 @@ pushd "$__DIRNAME__/image" > /dev/null
 		function checkForValue {
 
 			local rid=`uuidgen`
-			CALL_request wait 10 200 \
+			CALL_request wait 30 200 \
 				"http://$(CALL_docker echo_CONTAINER_HOST_IP):${port}/?rid=${rid}" \
 				"Hello World from dockerized NodeJS process! [${1}][rid:${rid}]"
 
